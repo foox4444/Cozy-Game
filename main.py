@@ -3,7 +3,7 @@ from sys import exit
 import time, random, os, sys
 
 pygame.init()
-pygame.display.set_caption('Cozy Game')
+pygame.display.set_caption('Cozy Cafe')
 
 def resource_path(relative_path):
     try:
@@ -23,6 +23,9 @@ profit = 10
 click = False
 
 # Images
+coin_image = pygame.transform.scale(pygame.image.load(resource_path("images/coin.png")), (30, 30))
+croissant_image = pygame.transform.scale(pygame.image.load(resource_path("images/croissant.png")), (80, 80))
+help_image = pygame.transform.scale(pygame.image.load(resource_path("images/help.png")), (30, 50))
 
 #Background
 main_menu_img = pygame.image.load("images/main_menu.jpg").convert_alpha()
@@ -45,6 +48,8 @@ def main_menu():
         button_1 = pygame.Rect(400, 300, 200, 90)
         button_3 = pygame.Rect(400, 500, 200, 90)
         
+        help_rect = pygame.Rect(930, 30, 30, 50)
+        
         mx, my = pygame.mouse.get_pos()
         b1_color = (180, 90, 0) if button_1.collidepoint((mx, my)) else (150, 75, 0)
         b3_color = (180, 90, 0) if button_3.collidepoint((mx, my)) else (150, 75, 0)
@@ -54,6 +59,8 @@ def main_menu():
         
         draw_text('Play', button_font, (255, 219, 187), screen, 420, 310)
         draw_text('Quit', button_font, (255, 219, 187), screen, 420, 510)
+        
+        screen.blit(help_image, (help_rect.x, help_rect.y))
         
         click = False
         for event in pygame.event.get():
@@ -68,10 +75,43 @@ def main_menu():
                 if event.button == 1:
                     if button_1.collidepoint(event.pos):
                         game()
+                    if help_rect.collidepoint(event.pos):
+                        instructions()
                     if button_3.collidepoint(event.pos):
                         pygame.quit()
                         sys.exit()
 
+        pygame.display.update()
+        clock.tick(60)
+
+def instructions():
+    running = True
+    while running:
+        screen.fill((100, 50, 20))
+        draw_text('How To Play', button_font, (255, 219, 187), screen, 300, 50)
+
+        draw_text('1. Click on the Croissant to earn coins.', font, (255, 219, 187), screen, 80, 200)
+        draw_text('2. Open the Upgrade Shop to spend your coins and get better tiers.', font, (255, 219, 187), screen, 80, 270)
+        draw_text('3. Unlock the coffee machine to get more money!', font, (255, 219, 187), screen, 80, 340)
+        draw_text('3. Achieve better tiers to make the ultimate cafe!', font, (255, 219, 187), screen, 80, 410)
+
+        back_btn = pygame.Rect(400, 550, 200, 80)
+        mx, my = pygame.mouse.get_pos()
+        btn_color = (180, 90, 0) if back_btn.collidepoint((mx, my)) else (150, 75, 0)
+        pygame.draw.rect(screen, btn_color, back_btn, border_radius=5)
+        draw_text('Back', button_font, (255, 219, 187), screen, 435, 555)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if back_btn.collidepoint(event.pos):
+                    running = False
+        
         pygame.display.update()
         clock.tick(60)
 
@@ -100,12 +140,15 @@ def game():
         mx, my = pygame.mouse.get_pos()
         
         screen.fill((245, 222, 179))
-        draw_text(f'Coins: {total}', font, (0, 0, 0), screen, 40, 40)
-        draw_text('Click stations to sell goods!', font, (120, 100, 80), screen, 40, 90)
+        coin_text_str = f'Coins: {total}'
+        draw_text(coin_text_str, font, (0, 0, 0), screen, 40, 40)
+        text_width, text_height = font.size(coin_text_str)
+        screen.blit(coin_image, (40 + text_width + 10, 45))
         
+        draw_text('Click stations to sell goods!', font, (120, 100, 80), screen, 40, 90)
         shop_toggle_bin = pygame.Rect(750, 40, 200, 50)
         pygame.draw.rect(screen, (255, 0, 0), shop_toggle_bin)
-        draw_text('Open Shop', font, (255, 255, 255), screen, 60, 210)
+        draw_text('Open Shop', font, (255, 255, 255), screen, 790, 50)
         
         #Coffee and Croissant
         croissant_payout = croissant_tier * 5
@@ -113,7 +156,7 @@ def game():
         
         
         if coffee_tier == 0:
-            coffee_color = (120, 60, 30)
+            coffee_color = (140, 140, 140)
             coffee_text = "Coffee Machine (Locked)"
             coffee_subtext = "Unlock in Shop"
         else:
@@ -128,6 +171,7 @@ def game():
         pygame.draw.rect(screen, (210, 105, 30), pastry_station, border_radius=10)
         draw_text(f"Bake Croissant (Tier {croissant_tier})", font, (255, 255, 255,), screen, pastry_station.x + 20, pastry_station.y + 40)
         draw_text(f"Earns +${croissant_payout} per click", font, (230, 230, 230), screen, pastry_station.x + 20, pastry_station.y + 90)
+        screen.blit(croissant_image, (pastry_station.x + 250, pastry_station.y + 35))
         
         if menu_x < menu_target_x:
             menu_x = min(menu_target_x, menu_x + slide_speed)
