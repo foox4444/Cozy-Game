@@ -26,10 +26,15 @@ click = False
 coin_image = pygame.transform.scale(pygame.image.load(resource_path("images/coin.png")), (30, 30))
 croissant_image = pygame.transform.scale(pygame.image.load(resource_path("images/croissant.png")), (80, 80))
 help_image = pygame.transform.scale(pygame.image.load(resource_path("images/help.png")), (30, 50))
+coffee_image = pygame.transform.scale(pygame.image.load(resource_path("images/coffee.png")), (120, 120))
+tip_image = pygame.transform.scale(pygame.image.load(resource_path("images/tip_jar.png")), (100, 75))
 
 #Background
 main_menu_img = pygame.image.load("images/main_menu.jpg").convert_alpha()
 main_bg = pygame.transform.scale(main_menu_img, (1000, 750))
+
+game_menu_img = pygame.image.load("images/game_bg.png").convert_alpha()
+game_bg = pygame.transform.scale(game_menu_img, (1000, 750))
 
 def draw_text(text, font, color, surface, x, y):
     textobj = font.render(text, 1, color)
@@ -109,8 +114,9 @@ def instructions():
                 if event.key == pygame.K_ESCAPE:
                     running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if back_btn.collidepoint(event.pos):
-                    running = False
+                if event.button == 1:
+                    if back_btn.collidepoint(event.pos):
+                        running = False
         
         pygame.display.update()
         clock.tick(60)
@@ -133,13 +139,24 @@ def game():
     error_message = ""
     error_timer = 0
     
-    coffee_station = pygame.Rect(100, 250, 350, 150)
-    pastry_station = pygame.Rect(100, 450, 350, 150)
+    coffee_pos = (200, 300)
+    croissant_pos = (600, 320)
+    
+    #tip variables
+    tip_jar_pos = (450, 310)
+    tip_jar_rect = pygame.Rect(tip_jar_pos[0], tip_jar_pos[1], 100, 100)
+    uncollected_tips = 0
+    last_tip_time = time.time()
+    tip_interval = 4.0
+    
+    coffee_hitbox = pygame.Rect(coffee_pos[0], coffee_pos[1], 120, 120)
+    croissant_hitbox = pygame.Rect(croissant_pos[0], croissant_pos[1], 80, 80)
     
     while running:
         mx, my = pygame.mouse.get_pos()
         
-        screen.fill((245, 222, 179))
+        screen.blit(game_bg, (0, 0))
+        
         coin_text_str = f'Coins: {total}'
         draw_text(coin_text_str, font, (0, 0, 0), screen, 40, 40)
         text_width, text_height = font.size(coin_text_str)
@@ -154,24 +171,32 @@ def game():
         croissant_payout = croissant_tier * 5
         coffee_payout = coffee_tier * 10
         
+        screen.blit(croissant_image, croissant_pos)
+        draw_text(f"Croissant (Tier {croissant_tier})", font, (100, 50, 20), screen, croissant_pos[0] - 20, croissant_pos[1] + 90)
+        draw_text(f"+${croissant_payout}/click", font, (139, 69, 19), screen, croissant_pos[0] - 10, croissant_pos[1] + 125)
         
         if coffee_tier == 0:
-            coffee_color = (140, 140, 140)
-            coffee_text = "Coffee Machine (Locked)"
-            coffee_subtext = "Unlock in Shop"
+            locked_overlay = coffee_image.copy()
+            locked_overlay.fill((50, 50, 50, 150), special_flags=pygame.BLEND_RGBA_MULT)
+            screen.blit(locked_overlay, coffee_pos)
+            draw_text("Coffee (Locked)", font, (100, 100, 100), screen, coffee_pos[0] - 10, coffee_pos[1] + 130)
         else:
-            coffee_color = (120, 60, 30)
-            coffee_text = f"Brew Coffee (Tier {coffee_tier})"
-            coffee_subtext = f"Earns +${coffee_payout} per click"
+            screen.blit(coffee_image, coffee_pos)
+            draw_text(f"Coffee (Tier {coffee_tier})", font, (100, 50, 20), screen, coffee_pos[0] - 10, coffee_pos[1] + 130)
+            draw_text(f"+${coffee_payout}/click", font, (139, 69, 19), screen, coffee_pos[0] +5, coffee_pos[1] + 165)
         
-        pygame.draw.rect(screen, coffee_color, coffee_station, border_radius=10)
-        draw_text(coffee_text, font, (255, 255, 255), screen, coffee_station.x + 20, coffee_station.y + 40)
-        draw_text(coffee_subtext, font, (230, 230, 230), screen, coffee_station.x + 20, coffee_station.y + 90)
+        current_time = time.time()
+        if current_time - last_tip_time > tip_interval:
+            base_tip = random.randint(1, 5)
+            tier_bonus = croissant_tier + coffee_tier
+            uncollected_tips += base_tip + tier_bonus
+            last_tip_time = current_time
         
-        pygame.draw.rect(screen, (210, 105, 30), pastry_station, border_radius=10)
-        draw_text(f"Bake Croissant (Tier {croissant_tier})", font, (255, 255, 255,), screen, pastry_station.x + 20, pastry_station.y + 40)
-        draw_text(f"Earns +${croissant_payout} per click", font, (230, 230, 230), screen, pastry_station.x + 20, pastry_station.y + 90)
-        screen.blit(croissant_image, (pastry_station.x + 250, pastry_station.y + 35))
+        screen.blit(tip_image, tip_jar_pos)
+        if uncollected_tips > 0:
+            draw_text(f"+${uncollected_tips} waiting!", font, (0, 150, 0), screen, tip_jar_pos[0] - 20, tip_jar_pos[1] - 35)
+        else:
+            draw_text("Empty", font, (130, 130, 130), screen, tip_jar_pos[0] + 10, tip_jar_pos[1] - 35)
         
         if menu_x < menu_target_x:
             menu_x = min(menu_target_x, menu_x + slide_speed)
@@ -231,10 +256,13 @@ def game():
                         if shop_toggle_bin.collidepoint(event.pos):
                             shop_open = True
                             menu_target_x = 0
-                        elif pastry_station.collidepoint(event.pos):
+                        elif croissant_hitbox.collidepoint(event.pos):
                             total += croissant_payout
-                        elif coffee_station.collidepoint(event.pos) and coffee_tier >= 0:
+                        elif coffee_hitbox.collidepoint(event.pos) and coffee_tier >= 0:
                             total += coffee_payout
+                        elif tip_jar_rect.collidepoint(event.pos) and uncollected_tips > 0:
+                            total += uncollected_tips
+                            uncollected_tips = 0
 
         if error_message != "":
             if pygame.time.get_ticks() - error_timer > 1000:
