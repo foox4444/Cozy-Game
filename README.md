@@ -1,7 +1,7 @@
 # Cozy-Game
 Cozy Cafe is a cafe clicker game. Sell coffee and croissants to earn money. Click the blue question mark to open the instructions menu to get further info. Use the play button to start playing and the quit button to quit the game.
 How to get the game:
-Download the .exe file to play the game. After that, open the file to start playing.
+Download the .exe file from the release to play the game. After that, open the file to start playing.
 
 
 
