@@ -14,9 +14,9 @@ def resource_path(relative_path):
 
 #Variables
 screen = pygame.display.set_mode((1000, 720))
-main_font = pygame.font.Font("ArbaneKnitted.ttf", 150)
+main_font = pygame.font.Font(resource_path("ArbaneKnitted.ttf"), 150)
 font = pygame.font.SysFont('sans', 30)
-button_font = pygame.font.Font("ArbaneKnitted.ttf", 75)
+button_font = pygame.font.Font(resource_path("ArbaneKnitted.ttf"), 75)
 clock = pygame.time.Clock()
 total = 0
 profit = 10
